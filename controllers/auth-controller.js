@@ -6,6 +6,29 @@ const { HttpError, ctrlWrapper } = require("../helpers");
 
 const { SECRET_KEY } = process.env;
 
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  
+  try {
+    const decodedToken = jwt.verify(token, SECRET_KEY);
+    const user = await User.findById(decodedToken.id);
+    
+    if (!user || user.token !== token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+};
+
 const register = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -70,7 +93,7 @@ const updateSubscription = async (req, res) => {
 module.exports = {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
-  getCurrent: ctrlWrapper(getCurrent),
-  logout: ctrlWrapper(logout),
-  updateSubscription: ctrlWrapper(updateSubscription),
+  getCurrent: [authenticateToken, ctrlWrapper(getCurrent)],
+  logout: [authenticateToken, ctrlWrapper(logout)],
+  updateSubscription: [authenticateToken, ctrlWrapper(updateSubscription)],
 };
