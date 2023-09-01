@@ -3,6 +3,8 @@ const express = require("express");
 const {
   register,
   login,
+  verifyEmail,
+  resendVerifyEmail,
   getCurrent,
   logout,
   updateSubscription,
@@ -15,6 +17,12 @@ const router = express.Router();
 
 router.post("/register", validateBody(schemas.registerSchema), register);
 router.post("/login", validateBody(schemas.loginSchema), login);
+router.get("/verify/:verificationToken", verifyEmail);
+router.post(
+  "/verify",
+  validateBody(schemas.userEmailSchema),
+  resendVerifyEmail
+);
 router.get("/current", authenticate, getCurrent);
 router.post("/logout", authenticate, logout);
 router.patch(
